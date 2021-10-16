@@ -1,0 +1,62 @@
+package br.com.alura.leilao.service;
+
+import br.com.alura.leilao.dao.LeilaoDao;
+import br.com.alura.leilao.model.Lance;
+import br.com.alura.leilao.model.Leilao;
+import br.com.alura.leilao.model.Usuario;
+import br.com.alura.leilao.util.builder.LeilaoBuilder;
+import br.com.alura.leilao.util.builder.UsuarioBuilder;
+import org.junit.Assert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+class FinalizarLeilaoServiceTest {
+
+    private FinalizarLeilaoService service;
+
+    @Mock
+    private LeilaoDao leilaoDao;
+
+    @BeforeEach()
+    public void beforeEach() {
+        MockitoAnnotations.initMocks(this);
+        this.service = new FinalizarLeilaoService(leilaoDao);
+    }
+
+    @Test
+    void deveriaFinalizarUmLeilao() {
+        List<Leilao> leiloes =  criarLeilao();
+        Mockito.when(leilaoDao.buscarLeiloesExpirados()).thenReturn(leiloes);
+        service.finalizarLeiloesExpirados();
+        Leilao leilao = leiloes.get(0);
+        Assert.assertTrue(leilao.isFechado());
+        Assert.assertEquals(new BigDecimal("900"), leilao.getLanceVencedor().getValor());
+        Mockito.verify(leilaoDao).salvar(leilao);
+    }
+
+    private List<Leilao> criarLeilao(){
+        List<Leilao> leiloes = new ArrayList<>();
+        LeilaoBuilder leilaoBuilder = new LeilaoBuilder();
+        UsuarioBuilder usuario = new UsuarioBuilder();
+        Leilao leilao = leilaoBuilder
+                .comNome("Celular")
+                .comValorInicial("500")
+                .comUsuario(usuario
+                        .comNome("Fulano")
+                        .criar())
+                .criar();
+        Lance primeiro = new Lance(new Usuario("Beltrano"), new BigDecimal("600"));
+        Lance segundo = new Lance(new Usuario("Ciclano"), new BigDecimal("900"));
+        leilao.propoe(primeiro);
+        leilao.propoe(segundo);
+        leiloes.add(leilao);
+        return leiloes;
+    }
+}
